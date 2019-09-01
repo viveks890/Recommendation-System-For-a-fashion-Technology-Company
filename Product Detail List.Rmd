@@ -1,0 +1,116 @@
+---
+title:"Product Detail List"
+author:"Vivek"
+date:20/Jun/2019
+output:html_document
+---
+
+# Exploring Product Detail List From Vaya Salon
+
+
+### Importing Required Libraries
+```{r}
+library(readxl)
+library(tidyverse)
+library(knitr)
+library(RColorBrewer)
+```
+
+
+
+### Preparing Data set for Exploration 
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+z1<- read_excel("F:/DATA ANALYSIS/PROJECT/VAYA SALON/vaya.xlsx", 
+                sheet = "Product Detail List", col_types = c("text", 
+                                                             "date", "text", "text", "text", 
+                                                             "text", "text", "text", "numeric", 
+                                                             "numeric", "numeric", "numeric", 
+                                                             "numeric", "numeric", "text", "text", 
+                                                             "text", "text"))
+
+kable(str(z1))
+dim(z1)
+
+kable(colSums(is.na(z1)))
+z1$Status<-as.factor(z1$Status)
+z1$Vendor<-as.factor(z1$Vendor)
+z1$Man<-as.factor(z1$Man)
+z1$Type<-as.factor(z1$Type)
+
+kable(table(z1$`Print Labels`))
+z1$`Print Labels`[1]<-"'No'"
+z1$`Print Labels`<-as.factor(z1$`Print Labels`)
+kable(str(z1$`Print Labels`))
+z1$Subcategory<-as.factor(z1$Subcategory)
+z1$Subcategory<-as.integer(z1$Subcategory)
+z1$`Product List`<-as.factor(z1$`Product List`)
+z1$`Product List`<-as.integer(z1$`Product List`)
+kable(colSums(is.na(z1)))
+z1<-na.omit(z1)
+kable(colSums(is.na(z1)))
+kable(str(z1))
+kable(summary(z1))
+```
+
+
+
+
+
+
+### TYPE OF PRODUCT
+```{r fig.height=9, fig.width=10, message=FALSE, warning=FALSE, paged.print=FALSE}
+#str(z1$Type)
+#View(z1)
+m1<-z1%>%
+  select(Type)%>%
+  group_by(Type)%>%
+  summarise(count=n())%>%
+  arrange(count)
+kable(m1)
+
+ggplot(m1,aes(Type,count))+
+  theme_minimal()+
+  geom_point(size=5,color=c("red","blue"))+
+  geom_segment(aes(x=Type,
+                   y=100,
+                   xend=Type,
+                   yend=count),color=c("red","blue"))+
+  geom_text(aes(label=count),hjust=-0.6)+
+  labs(x="Type of Product",y="Count",Title="Type of Products sold")
+```
+
+
+
+
+### Cost wrt Manufacturer
+```{r fig.width=10, message=FALSE, warning=FALSE, paged.print=FALSE}
+m2<-z1%>%
+  select(Cost,Man)%>%
+  group_by(Man)%>%
+  summarise(Total_cost=sum(Cost))%>%
+  arrange(Total_cost)
+m2
+
+ggplot(m2,aes(Man,Total_cost))+
+  theme_minimal()+
+  geom_point(size=5,color=brewer.pal(4,"Blues"))+
+  geom_segment(aes(x=Man,
+                   y=0,
+                   xend=Man,
+                   yend=Total_cost),color=brewer.pal(4,"Blues"))+
+  geom_text(aes(label=Total_cost),hjust=-0.2)+
+  labs(x="Manufacturer",y="Total Cost",
+       title="Total Cost of every Manufacturer")
+```
+
+
+
+### Products wrt Type 
+```{r}
+m3<-z1%>%
+  select(Cost,Man)%>%
+  group_by(Man)%>%
+  summarise(Median_cost=median(Cost))%>%
+  arrange(Median_cost)
+kable(m3)
+```

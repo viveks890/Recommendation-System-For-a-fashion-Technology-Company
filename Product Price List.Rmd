@@ -1,0 +1,65 @@
+---
+title:"Product Price List"
+author:"Vivek"
+date:20/Jun/2019
+output:html_document
+---
+
+## Importing Required Libraries
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+library(readxl)
+library(tidyverse)
+library(knitr)
+```
+
+
+
+### Preparing Dataset For Exploration
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+z1<-read_excel("F:\\DATA ANALYSIS\\PROJECT\\VAYA SALON\\vaya.xlsx",sheet = 4)
+dim(z1)
+kable(head(z1))
+kable(colSums(is.na(z1)))
+names(z1)
+#View(z1)
+
+kable(str(z1))
+
+z1$Retail_Price<-as.integer(z1$Retail_Price)
+```
+
+
+
+### Retail Price Of every Product
+```{r}
+m1<-z1%>%
+  select(Retail_Price,Product_List)%>%
+  filter(Retail_Price!=0)%>%
+  group_by(Product_List)%>%
+  summarise(Price_in_dollars=sum(Retail_Price))%>%
+  arrange(Price_in_dollars)
+kable(m1)
+```
+
+
+
+### Number Of Products Sold
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+m2<-z1%>%
+  select(Retail_Price)%>%
+  filter(Retail_Price!=0)%>%
+  summarise(Sold=n())
+kable(m2)
+```
+
+
+
+
+### Products Unsold
+```{r}
+m3<-z1%>%
+  select(Retail_Price)%>%
+  filter(Retail_Price==0)%>%
+  summarise(Unsold=n())
+kable(m3)
+```

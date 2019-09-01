@@ -1,0 +1,59 @@
+---
+title:"Ticket Detail Summary"
+author:"Vivek"
+date:20/Jun/2019
+output:html_document
+---
+
+# Ticket Detail Summary
+### Importing required libraries
+```{r}
+library(readxl)
+library(tidyverse)
+library(knitr)
+```
+
+
+
+### Importing data set
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+z1<-read_excel("F:/DATA ANALYSIS/PROJECT/VAYA SALON/vaya.xlsx", 
+               sheet = "Ticket Detail Summary", col_types = c("text", 
+                                                              "numeric", "numeric", "text", "text", 
+                                                              "text", "numeric", "numeric", "numeric", 
+                                                              "numeric", "numeric", "numeric", 
+                                                              "numeric", "text", "numeric"))
+dim(z1)
+colSums(is.na(z1))
+z1<-subset(z1,select=-c(Pay_Code,Salon,Date,Type,Product_Sales,
+                        Service_Sales,Other_Sales,
+                        Tax,Tip,Total_Number_of_Tickets))
+colSums(is.na(z1))
+names(z1)
+str(z1)
+#View(z1)
+```
+
+
+### Total Sale per Customer
+```{r}
+m1<-z1%>%
+  select(Customer,Total_Sales)%>%
+  group_by(Customer)%>%
+  summarise(count=sum(Total_Sales))%>%
+  filter(count!=0)%>%
+  arrange(count)
+kable(m1)
+```
+
+
+
+### Discount with membership type
+```{r}
+m2<-z1%>%
+  select(Membership_Type,Discount)%>%
+  group_by(Membership_Type)%>%
+  summarise(count=sum(Discount))%>%
+  arrange(count)
+kable(m2)
+```

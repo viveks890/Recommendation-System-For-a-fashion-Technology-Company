@@ -1,0 +1,340 @@
+---
+title: "Ticket Detail Summary"
+author: "Vivek"
+date: 20/Jun/2019
+output: word_document
+---
+
+# K-means Clustering using Ticket Detail Summary Dataset
+
+#### Importing Required Libraries
+```{r echo=TRUE, message=FALSE, warning=FALSE, paged.print=FALSE}
+library(readxl)
+library(cluster)
+library(factoextra)
+library(fpc)
+library(tidyverse)
+library(knitr)
+```
+
+
+
+#### Importing Dataset
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+z1<-read_excel("F:/DATA ANALYSIS/PROJECT/VAYA SALON/vaya.xlsx", 
+               sheet = "Ticket Detail Summary", col_types = c("text", 
+                                                              "numeric", "numeric", "text", "text", 
+                                                              "text", "numeric", "numeric", "numeric", 
+                                                              "numeric", "numeric", "numeric", 
+                                                              "numeric", "text", "numeric"))
+```
+
+
+
+#### Removing unnecssary Variables
+```{r}
+kable(names(z1))
+
+z2<-subset(z1,select=c(Total_Sales,Other_Sales,Service_Sales,Product_Sales,Discount))
+
+kable(names(z2))
+```
+
+
+
+### Tunning variables for Modelling
+#### Total Sales
+```{r fig.height=10, fig.width=14, message=FALSE, warning=FALSE, paged.print=FALSE}
+z2$Total_Sales<-ifelse(z2$Total_Sales<0,0,z2$Total_Sales)
+
+ggplot(z2,aes(Total_Sales))+
+  theme_minimal()+
+  geom_density(color="blue",fill="lightblue")+
+  geom_vline(aes(xintercept=mean(Total_Sales)),color="red")+
+  labs(x="Total Sales",y="Density",title="Distribution of Total Sales")
+
+z2$Total_Sales<-sqrt(z2$Total_Sales)
+
+ggplot(z2,aes(Total_Sales))+
+  theme_minimal()+
+  geom_density(color="blue",fill="lightblue")+
+  geom_vline(aes(xintercept=mean(Total_Sales)),color="red")+
+  labs(x="Total Sales",y="Density",title="Distribution of Square Root of Total Sales")
+```
+
+
+
+#### Other_Sales
+```{r fig.height=10, fig.width=14, message=FALSE, warning=FALSE, paged.print=FALSE}
+ggplot(z2,aes(Other_Sales))+
+  theme_minimal()+
+  geom_density(color="blue",fill="lightblue")+
+  geom_vline(aes(xintercept=mean(Other_Sales)),color="red")+
+  labs(x="Other Sales",y="Density",title="Distribution of Other Sales")
+
+z2$Other_Sales<-sqrt(z2$Other_Sales)
+
+ggplot(z2,aes(Other_Sales))+
+  theme_minimal()+
+  geom_density(color="blue",fill="lightblue")+
+  geom_vline(aes(xintercept=mean(Other_Sales)),color="red")+
+  labs(x="Other Sales",y="Density",title="Distribution of Sqaure Root of Other Sales")
+```
+
+
+
+
+#### Service Sales
+```{r fig.height=10, fig.width=14, message=FALSE, warning=FALSE, paged.print=FALSE}
+ggplot(z2,aes(Service_Sales))+
+  theme_minimal()+
+  geom_density(color="blue",fill="lightblue")+
+  geom_vline(aes(xintercept=mean(Service_Sales)),color="red")+
+  labs(x="Service Sales",y="Density",title="Distribution of Service Sales")
+
+for(i in 1:2){
+z2$Service_Sales<-sqrt(z2$Service_Sales)
+i+1
+}
+
+ggplot(z2,aes(Service_Sales))+
+  theme_minimal()+
+  geom_density(color="blue",fill="lightblue")+
+  geom_vline(aes(xintercept=mean(Service_Sales)),color="red")+
+  labs(x="Service Sales",y="Density",title="Distribution of Service Sales")
+```
+
+
+
+
+#### Product Sales
+```{r fig.height=10, fig.width=14, message=FALSE, warning=FALSE, paged.print=FALSE}
+z2$Product_Sales<-ifelse(z2$Product_Sales<0,0,z2$Product_Sales)
+
+ggplot(z2,aes(Product_Sales))+
+  theme_minimal()+
+  geom_density(color="blue",fill="lightblue")+
+  geom_vline(aes(xintercept=mean(Product_Sales)),color="red")+
+  labs(x="Product Sales",y="Density",title="Distribution of Product Sales")
+
+z2$Product_Sales<-sqrt(z2$Product_Sales)
+
+ggplot(z2,aes(Product_Sales))+
+  theme_minimal()+
+  geom_density(color="blue",fill="lightblue")+
+  geom_vline(aes(xintercept=mean(Product_Sales)),color="red")+
+  labs(x="Product Sales",y="Density",title="Distribution of Product Sales")
+```
+
+
+
+#### Discount
+```{r fig.height=10, fig.width=14, message=FALSE, warning=FALSE, paged.print=FALSE}
+ggplot(z2,aes(Discount))+
+  theme_minimal()+
+  geom_density(color="blue",fill="lightblue")+
+  geom_vline(aes(xintercept=mean(Discount)),color="red")+
+  labs(x="Discount",y="Density",title="Distribution of Discount")
+
+z2$Discount<-sqrt(z2$Discount)
+
+ggplot(z2,aes(Discount))+
+  theme_minimal()+
+  geom_density(color="blue",fill="lightblue")+
+  geom_vline(aes(xintercept=mean(Discount)),color="red")+
+  labs(x="Discount",y="Density",title="Distribution of Discount")
+```
+
+
+
+
+### Detrmining number of clusters
+```{r fig.height=10, fig.width=14, message=FALSE, warning=FALSE, paged.print=FALSE}
+set.seed(123)
+#Calculating within_sum_of_squares of each cluster
+wss<-0
+for(i in 1:15){
+  wss[i]<-sum(kmeans(z2,centers=i)$withinss)
+}
+#Determining number of clusters using Elbow Method
+plot(1:15,wss,type="b",col="blue")
+wss[3]-wss[4]
+wss[4]-wss[5]
+wss[5]-wss[6]
+```
+
+
+
+### Clustering with 4 clusters
+```{r}
+#Scaling Dataset for equal weights
+z3<-scale(z2)
+#Applying K-Means clustering with 20 iterations
+clus<-kmeans(z3,4,iter.max = 20,nstart = 25)
+```
+
+
+
+##### Within Sum of Squares of Clusters
+```{r}
+clus$withinss
+```
+
+
+
+
+##### Between Sum of Sqaures of Clusters
+```{r}
+clus$betweenss
+```
+
+
+
+
+##### Size of Clusters
+```{r}
+clus$size
+```
+
+
+
+
+### Silhouette Coefficient
+```{r fig.height=10, fig.width=14, message=FALSE, warning=FALSE, paged.print=FALSE}
+diss<-daisy(z3)
+diss1<-diss^2
+silcof<-silhouette(clus$cluster,diss1)
+plot(silcof,col="lightblue")
+```
+
+
+
+#### Plotting
+```{r fig.height=10, fig.width=14, message=FALSE, warning=FALSE, paged.print=FALSE}
+fviz_cluster(clus,z3,
+             ellipse = TRUE,
+             geom="point",
+             repel = TRUE,
+             show.clust.cent = TRUE,
+             ggtheme = theme_minimal())
+```
+
+
+
+
+##### Creating a new dataframe for cluster exploration
+```{r}
+z4<-data.frame(z1,Cluster=clus$cluster)
+z5<-data.frame(z2,Cluster=clus$cluster)
+```
+#write.csv(z4,"F:\\DATA ANALYSIS\\PROJECT\\VAYA #SALON\\Modelling\\TDS(CLUSTER).csv")
+
+
+
+### Exploring Patterns in Clusters
+```{r}
+z5$Cluster<-as.factor(z5$Cluster)
+
+m1<-z5%>%
+  select(Total_Sales,Other_Sales,
+         Service_Sales,Product_Sales,
+         Discount,Cluster)%>%
+  group_by(Cluster)%>%
+  summarise(Avg_Total_Sales=mean(Total_Sales),
+            Avg_Other_Sales=mean(Other_Sales),
+            Avg_Service_Sales=mean(Service_Sales),
+            Avg_Product_Sales=mean(Product_Sales),
+            Avg_Discount=mean(Discount))
+```
+
+
+
+#### Rounding off Values
+```{r}
+m1$Avg_Total_Sales<-round(m1$Avg_Total_Sales,digits = 2)
+m1$Avg_Other_Sales<-round(m1$Avg_Other_Sales,digits = 2)
+m1$Avg_Service_Sales<-round(m1$Avg_Service_Sales,digits = 2)
+m1$Avg_Product_Sales<-round(m1$Avg_Product_Sales,digits = 2)
+m1$Avg_Discount<-round(m1$Avg_Discount,digits = 2)
+kable(m1)
+```
+
+
+
+### Average Total Sales Per Cluster
+```{r fig.height=10, fig.width=14, message=FALSE, warning=FALSE, paged.print=FALSE}
+ggplot(m1,aes(Cluster,Avg_Total_Sales,color=Cluster))+
+  theme_minimal()+
+  geom_point(size=5)+
+  geom_segment(aes(x=Cluster,
+                   y=0,
+                   xend=Cluster,
+                   yend=Avg_Total_Sales))+
+  geom_text(aes(label=Avg_Total_Sales),hjust=-0.3)+
+  labs(x="Clusters",y="Average Total Sales",
+       title="Average Total Sales per Cluster")
+```
+
+
+
+### Average Other Sales per Cluster
+```{r fig.height=10, fig.width=14, message=FALSE, warning=FALSE, paged.print=FALSE}
+ggplot(m1,aes(Cluster,Avg_Other_Sales,color=Cluster))+
+  theme_minimal()+
+  geom_point(size=5)+
+  geom_segment(aes(x=Cluster,
+                   y=0,
+                   xend=Cluster,
+                   yend=Avg_Other_Sales))+
+  geom_text(aes(label=Avg_Other_Sales),hjust=-0.3)+
+  labs(x="Clusters",y="Average Other Sales",
+       title="Average Other Sales per Cluster")
+```
+
+
+
+### Average Service Sales per Cluster
+```{r fig.height=10, fig.width=14, message=FALSE, warning=FALSE, paged.print=FALSE}
+ggplot(m1,aes(Cluster,Avg_Service_Sales,color=Cluster))+
+  theme_minimal()+
+  geom_point(size=5)+
+  geom_segment(aes(x=Cluster,
+                   y=0,
+                   xend=Cluster,
+                   yend=Avg_Service_Sales))+
+  geom_text(aes(label=Avg_Service_Sales),hjust=-0.3)+
+  labs(x="Clusters",y="Average Service Sales",
+       title="Average Service Sales per Cluster")
+```
+
+
+
+### Average Product Sales per Cluster
+```{r fig.height=10, fig.width=14, message=FALSE, warning=FALSE, paged.print=FALSE}
+ggplot(m1,aes(Cluster,Avg_Product_Sales,color=Cluster))+
+  theme_minimal()+
+  geom_point(size=5)+
+  geom_segment(aes(x=Cluster,
+                   y=0,
+                   xend=Cluster,
+                   yend=Avg_Product_Sales))+
+  geom_text(aes(label=Avg_Product_Sales),hjust=-0.3)+
+  labs(x="Clusters",y="Average Product Sales",
+       title="Average Product Sales per Cluster")
+```
+
+
+
+### Average Discount per Cluster
+```{r fig.height=10, fig.width=14, message=FALSE, warning=FALSE, paged.print=FALSE}
+ggplot(m1,aes(Cluster,Avg_Discount,color=Cluster))+
+  theme_minimal()+
+  geom_point(size=5)+
+  geom_segment(aes(x=Cluster,
+                   y=0,
+                   xend=Cluster,
+                   yend=Avg_Discount))+
+  geom_text(aes(label=Avg_Discount),hjust=-0.3)+
+  labs(x="Clusters",y="Average Discount",
+       title="Average Discount per Cluster")
+```

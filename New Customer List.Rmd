@@ -1,0 +1,47 @@
+---
+title:"New Customer List"
+author:"Vivek"
+date:20/Jun/2019
+output:html_document
+---
+# Exploring New Customer List from Vaya Salon Data Set
+
+
+## Importing required libraries
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+library(readxl)
+library(tidyverse)
+library(knitr)
+```
+
+
+
+
+```{r}
+z1<-read_excel("F:\\DATA ANALYSIS\\PROJECT\\VAYA SALON\\vaya.xlsx",sheet=2)
+dim(z1)
+kable(colSums(is.na(z1)))
+kable(summary(z1))
+```
+
+
+
+
+## Returned
+```{r fig.width=10, message=FALSE, warning=FALSE, paged.print=FALSE}
+m1<-z1%>%
+  select(Returned)%>%
+  group_by(Returned)%>%
+  summarise(count=n())
+kable(m1)
+
+ggplot(m1,aes(Returned,count,color=Returned))+
+  theme_minimal()+
+  geom_point(size=8)+
+  geom_segment(aes(y=0,
+                   x=Returned,
+                   xend=Returned,
+                   yend=count))+
+  geom_text(aes(label=count),hjust=-0.6)+
+  labs(x="Customer Returned",y="Count",title="Number of customers Returned")
+```

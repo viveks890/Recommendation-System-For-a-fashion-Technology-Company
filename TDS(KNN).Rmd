@@ -1,0 +1,108 @@
+---
+title: "Ticket Detail Summary"
+author: "Vivek"
+date: 20/Jun/2019
+output: word_document
+---
+
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+library(tidyverse)
+library(knitr)
+library(caret)
+library(caret)
+library(e1071)
+library(psych)
+library(markdown)
+```
+
+```{r message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
+cluster<-read.csv("F:\\DATA ANALYSIS\\PROJECT\\VAYA SALON\\Modelling\\TDS(CLUSTER).csv")
+
+cluster1<-subset(cluster,select=c(Total_Sales,Other_Sales,Service_Sales,Product_Sales,Discount))
+
+kable(names(cluster1))
+
+kable(head(cluster1))
+
+kable(describe (cluster1))
+
+cluster1$Other_Sales<-sqrt(cluster1$Other_Sales)
+
+kable
+
+```
+
+
+
+### Standardizing variables
+```{r include=FALSE}
+cluster1<-scale(cluster1)
+
+cluster1<-data.frame(cluster1,Clusters=cluster$Cluster)
+
+cluster1$Clusters<-as.factor(cluster1$Clusters)
+
+kable(names(cluster1))
+
+kable(str(cluster1))
+```
+
+
+
+
+### DATA PARTITION
+```{r message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
+
+index<-createDataPartition(cluster1$Clusters , p=0.75 , list=F)
+
+train<-cluster1[index,]
+
+test<-cluster1[-index,]
+
+
+
+#kable(dim(train))
+
+#kable(head(train))
+
+#kable(dim(test))
+
+#kable(head(test))
+```
+
+
+
+
+### MODELLING
+```{r echo=TRUE, message=FALSE, warning=FALSE, paged.print=FALSE}
+m1<-train(Clusters~.,data=train,method="knn")
+```
+
+
+### VALIDATION
+```{r echo=TRUE, message=FALSE, warning=FALSE, paged.print=FALSE}
+pre<-predict(m1, newdata = test, type="prob")
+kable(head(pre))
+pre$Class<-ifelse(pre$`1`>0.5,1,ifelse(pre$`2`>0.5,2,ifelse(pre$`3`>0.5,3,4)))
+kable(head(pre))
+```
+
+
+
+### CONFUSION MATRIX
+```{r}
+x<-table(test$Clusters,pre$Class)
+
+x
+
+sum(diag(x))/sum(x)*100
+```
+
+
+
+
+
+
+
+

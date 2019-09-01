@@ -1,0 +1,130 @@
+---
+title:"Service List"
+author:"Vivek"
+date:20/Jun/2019
+output:html_document
+---
+
+# Exploring Service List Data Set
+
+### Importing Required Libraries
+```{r}
+library(readxl)
+library(tidyverse)
+library(knitr)
+```
+
+
+
+### Importing Data Set
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+z1<-read_excel("F:/DATA ANALYSIS/PROJECT/VAYA SALON/vaya.xlsx", 
+               sheet = "Service List", col_types = c("text", 
+                                                     "numeric", "text", "text", "text", 
+                                                     "text", "text", "text", "numeric", 
+                                                     "numeric", "numeric", "numeric", 
+                                                     "numeric", "numeric"))
+dim(z1)
+colSums(is.na(z1))
+names(z1)
+z2<-subset(z1,select=-c(Salon,Date,Time...3,Name,Book_Name,Code,
+                        Product_Charge,Time...11,Process,
+                        Finish))
+#View(z2)
+kable(summary(z2))
+kable(head(z2))
+str(z2)
+```
+
+
+
+### Time spent in every Service
+```{r fig.width=10, message=FALSE, warning=FALSE, paged.print=FALSE}
+m1<-z2%>%
+  select(Service_List,time_min)%>%
+  group_by(Service_List)%>%
+  summarise(count=sum(time_min))%>%
+  arrange(count)
+kable(m1)
+
+m1$count<-ifelse(m1$count==75.0000000000001,75,m1$count)
+
+
+ggplot(m1,aes(Service_List,count,color=Service_List))+
+  theme_minimal()+
+  geom_point(size=5)+
+  geom_segment(aes(x=Service_List,
+                   y=0,
+                   xend=Service_List,
+                   yend=count))+
+  geom_text(aes(label=count),hjust=-0.5)+
+  labs(x="Services",y="Total Time",title="Total time per Service")+
+  coord_flip()
+```
+
+
+
+### Checking whether service is commsionable or not
+```{r}
+m2<-z2%>%
+  select(Commissionable)%>%
+  group_by(Commissionable)%>%
+  summarise(count=n())
+kable(m2)
+```
+
+
+
+### Total Retail price of services 
+```{r fig.width=10, message=FALSE, warning=FALSE, paged.print=FALSE}
+m3<-z2%>%
+  select(Service_List,Retail_Price)%>%
+  group_by(Service_List)%>%
+  summarise(count=sum(Retail_Price))%>%
+  filter(count!=0)%>%
+  arrange(count)
+kable(m3)
+
+ggplot(m3,aes(Service_List,count,color=Service_List))+
+  theme_minimal()+
+  geom_point(size=5)+
+  geom_segment(aes(x=Service_List,
+                   y=0,
+                   xend=Service_List,
+                   yend=count))+
+  geom_text(aes(label=count),hjust=-0.5)+
+  labs(x="Services",y="Reatil price",title="Retail Price per service")
+```
+
+
+
+### Number of Times Services provided
+```{r fig.width=10, message=FALSE, warning=FALSE, paged.print=FALSE}
+m4<-z2%>%
+  select(Service_List)%>%
+  group_by(Service_List)%>%
+  summarise(count=n())%>%
+  arrange(count)
+kable(m4)
+
+ggplot(m4,aes(Service_List,count,color=Service_List))+
+  theme_minimal()+
+  geom_point(size=5)+
+  geom_segment(aes(x=Service_List,
+                   y=0,
+                   xend=Service_List,
+                   yend=count))+
+  geom_text(aes(label=count),hjust=-1)+
+  labs(x="Services",y="Number of customers",title="Number of customers per service")+
+  coord_flip()
+```
+
+
+
+### Comparison of Time and Retail price
+```{r fig.width=10, message=FALSE, warning=FALSE, paged.print=FALSE}
+ggplot(z2,aes(Retail_Price,time_min,color=Service_List))+
+  theme_minimal()+
+  geom_point(size=3)+
+  labs(x="Retail Price",y="Time",title="Change in Time with Retail price")
+```

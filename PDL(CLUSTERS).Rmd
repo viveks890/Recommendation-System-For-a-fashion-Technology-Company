@@ -1,0 +1,265 @@
+---
+title: "PDL(Cluster)"
+author: "Vivek"
+date: "20/Jun/2019"
+output:
+  html_document:
+    df_print: paged
+---
+
+# K-means Clustering using Product Detail List Dataset
+
+## Importing Required Libraries
+```{r echo=TRUE, message=FALSE, warning=FALSE, paged.print=FALSE}
+library(readxl)
+library(cluster)
+library(factoextra)
+library(fpc)
+library(tidyverse)
+library(knitr)
+library(psych)
+```
+
+
+### Importing Required Dataset
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+z1<-read_excel("F:/DATA ANALYSIS/PROJECT/VAYA SALON/vaya.xlsx", 
+    sheet = "Product Detail List", col_types = c("text", 
+               "numeric", "text", "text", "text", 
+               "text", "text", "text", "numeric", 
+               "numeric", "numeric", "numeric", 
+               "numeric", "numeric", "text", "text", 
+               "text", "text"))
+```
+
+
+
+### Removing unnecessary variables
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+names(z1)
+z2<-subset(z1,select=c(On_HandQty,Cost,Retail_Price))
+```
+
+
+
+
+
+#### Removing Skewness in cost and Retail price
+##### Distribution of Cost
+```{r fig.height=10, fig.width=14, message=FALSE, warning=FALSE, paged.print=FALSE}
+ggplot(z1,aes(Cost))+
+  theme_minimal()+
+  geom_density(color="blue",fill="lightblue")+
+  geom_vline(aes(xintercept=mean(Cost)),color="red")+
+  geom_vline(aes(xintercept=median(Cost)),color="green")+
+  labs(x="Cost",y="Density",title="Distribution of cost")
+
+#Removing Skewness
+
+for(i in 1:2){
+z2$Cost<-sqrt(z2$Cost)
+i+1
+}
+ggplot(z2,aes(Cost))+
+  theme_minimal()+
+  geom_density(fill="lightblue",color="blue")+
+  geom_vline(aes(xintercept=mean(Cost)),color="red")+
+  geom_vline(aes(xintercept=median(Cost)),color="green")+
+  labs(x="Square root of Cost",y="Density",
+       title="Distribution of Cost after removing Skewness")
+```
+
+
+
+
+
+#### Distribution of Retail Price
+```{r fig.height=10, fig.width=14, message=FALSE, warning=FALSE, paged.print=FALSE}
+ggplot(z1,aes(Retail_Price))+
+  theme_minimal()+
+  geom_density(fill="lightblue",color="blue")+
+  geom_vline(aes(xintercept=mean(Retail_Price)),color="red")+
+  labs(x="Retail Price",y="Density",title="Distribution of Retail Price")
+
+#Removing Skewness
+for(i in 1:3){
+z2$Retail_Price<-sqrt(z2$Retail_Price)
+i+1
+}
+
+ggplot(z2,aes(Retail_Price))+
+  theme_minimal()+
+  geom_density(fill="lightblue",color="blue")+
+  geom_vline(aes(xintercept=mean(Retail_Price)),color="red")+
+  labs(x="Retail Price",y="Density",
+       title="Distribution of Retail Price after removing Skewness")
+```
+
+
+```{r}
+kable(describe(z2))
+```
+
+
+
+
+# Applying K-means Clustering
+### Determining number of clusters
+```{r fig.height=10, fig.width=14, message=FALSE, warning=FALSE, paged.print=FALSE}
+
+wss<-0
+
+for(i in 1:15){
+  wss[i]<-sum(kmeans(z2,centers = i)$withinss)
+}
+plot(1:15,wss,type="b",col="blue")
+wss[3]-wss[4]
+wss[4]-wss[5]
+wss[5]-wss[6]
+```
+
+
+
+
+### Clustering with 4 clusters
+```{r}
+
+z3<-scale(z2)
+clus<-kmeans(z3,4,iter.max = 20,nstart = 25)
+```
+
+
+
+#### Within Sum of Squares of Clusters
+```{r}
+clus$withinss
+```
+
+
+
+#### Between Sum of Squares of Clusters
+```{r}
+clus$betweenss
+```
+
+
+
+#### Size of Every Cluster
+```{r}
+clus$size
+```
+
+
+
+
+### Silhouette coefficient
+```{r fig.height=10, fig.width=14, message=FALSE, warning=FALSE, paged.print=FALSE}
+diss<-daisy(z2)
+diss1<-diss^2
+silcof<-silhouette(clus$cluster,diss1)
+plot(silcof,col="red")
+```
+
+
+
+### Plotting
+```{r fig.height=10, fig.width=14, message=FALSE, warning=FALSE, paged.print=FALSE}
+fviz_cluster(clus,z3,
+             ellipse = TRUE,
+             geom="point",
+             repel = TRUE,
+             show.clust.cent = TRUE,
+             ggtheme = theme_minimal())
+```
+
+#### Creating a new Data Frame with Cluster Variable
+```{r}
+z4<-data.frame(z1,Cluster=clus$cluster)
+```
+
+
+
+
+#write.csv(z4,"F:\\DATA #ANALYSIS\\PROJECT\\VAYASALON\\Modelling\\PDL(CLUSTERS).csv")
+
+
+
+
+### Loading new Data Set for Analysis on Clusters formed
+```{r}
+cluster<-read.csv("F:\\DATA ANALYSIS\\PROJECT\\VAYA SALON\\Modelling\\PDL(CLUSTERS).csv")
+cluster$Cluster<-as.factor(cluster$Cluster)
+```
+
+
+
+
+#### Size of every cluster
+```{r}
+m1<-cluster%>%
+  select(Cluster)%>%
+  group_by(Cluster)%>%
+  summarise(size=n())%>%
+  arrange(size)
+kable(m1)
+```
+
+
+
+#### Values per Clusters
+```{r}
+m2<-cluster%>%
+  select(Cost,Retail_Price,On_HandQty,Cluster)%>%
+  group_by(Cluster)%>%
+  summarise(Average_OnHandQty=mean(On_HandQty),Average_Cost=mean(Cost),
+            Average_Retail_Price=mean(Retail_Price))
+kable(m2)  
+```
+
+
+##### Average On Hand Quantity in every Cluster
+```{r fig.height=10, fig.width=14, message=FALSE, warning=FALSE, paged.print=FALSE}
+ggplot(m2,aes(Cluster,Average_OnHandQty,color=Cluster))+
+  theme_minimal()+
+  geom_point(size=5)+
+  geom_segment(aes(x=Cluster,
+                   y=0,
+                   xend=Cluster,
+                   yend=Average_OnHandQty))+
+  geom_text(aes(label=Average_OnHandQty),hjust=-0.3)+
+  labs(x="Clusters",y="Average on hand quantity",
+       title="Average on hand quantity per Clusters")
+```
+
+
+
+##### Average Cost per Cluster
+```{r fig.height=10, fig.width=14, message=FALSE, warning=FALSE, paged.print=FALSE}
+ggplot(m2,aes(Cluster,Average_Cost,color=Cluster))+
+  theme_minimal()+
+  geom_point(size=5)+
+  geom_segment(aes(x=Cluster,
+                   y=0,
+                   xend=Cluster,
+                   yend=Average_Cost))+
+  geom_text(aes(label=Average_Cost),hjust=-0.3)+
+  labs(x="Clusters",y="Average Cost",
+       title="Average Cost per Clusters")
+```
+
+
+
+##### Average Retail Price Per Cluster
+```{r fig.height=10, fig.width=14, message=FALSE, warning=FALSE, paged.print=FALSE}
+ggplot(m2,aes(Cluster,Average_Retail_Price,color=Cluster))+
+  theme_minimal()+
+  geom_point(size=5)+
+  geom_segment(aes(x=Cluster,
+                   y=0,
+                   xend=Cluster,
+                   yend=Average_Retail_Price))+
+  geom_text(aes(label=Average_Retail_Price),hjust=-0.3)+
+  labs(x="Clusters",y="Average Retail Price",
+       title="Average Retail Price per Clusters")
+```
